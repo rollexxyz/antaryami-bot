@@ -15,26 +15,47 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "ANTARYAMI BOT is running!"
+    return "✅ ANTARYAMI BOT is running and ready to serve aspirants!"
 
 def run_flask():
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000))  # Render sets this automatically
     app.run(host='0.0.0.0', port=port)
 
-# ✅ Auto-generated lecture database (01–200)
-lecture_data = {
-    str(i).zfill(2): {
-        "topic": f"GS Lecture {str(i).zfill(2)}",
-        "batch": "GS Crash Course by Khan Sir"
+# ✅ Subject-wise lecture database
+subjects = {
+    "gs": {
+        "batch": "GS Crash Course by Khan Sir",
+        "prefix": "GS Lecture"
+    },
+    "history": {
+        "batch": "History Sprint by Khan Sir",
+        "prefix": "History Lecture"
+    },
+    "polity": {
+        "batch": "Polity Power Series",
+        "prefix": "Polity Lecture"
     }
-    for i in range(1, 201)
 }
 
+lecture_data = {
+    subject: {
+        str(i).zfill(2): {
+            "topic": f"{meta['prefix']} {str(i).zfill(2)}",
+            "batch": meta["batch"]
+        }
+        for i in range(1, 201)
+    }
+    for subject, meta in subjects.items()
+}
+
+# ✅ Telegram command handler
 async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        lecture_number = context.args[0].zfill(2)
-        link = context.args[1]
-        data = lecture_data.get(lecture_number)
+        subject = context.args[0].lower()
+        lecture_number = context.args[1].zfill(2)
+        link = context.args[2]
+
+        data = lecture_data.get(subject, {}).get(lecture_number)
 
         if data:
             message = f"""
@@ -47,11 +68,12 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
             await update.message.reply_html(message)
         else:
-            await update.message.reply_text("❌ Lecture number not found in database.")
+            await update.message.reply_text("❌ Lecture not found for this subject.")
     except Exception as e:
         logging.error(f"Error in /post command: {e}")
-        await update.message.reply_text("⚠️ Format error. Use: /post <lecture_number> <youtube_link>")
+        await update.message.reply_text("⚠️ Format error. Use: /post <subject> <lecture_number> <youtube_link>")
 
+# ✅ Bot runner
 def run_bot():
     try:
         token = os.getenv("BOT_TOKEN")
@@ -61,6 +83,7 @@ def run_bot():
     except Exception as e:
         logging.error(f"Bot failed to start: {e}")
 
+# ✅ Start both Flask and Bot
 if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
     run_bot()
