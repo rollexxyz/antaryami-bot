@@ -1,6 +1,19 @@
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import os
+
+# Dummy Flask server to satisfy Render's port binding
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "ANTARYAMI BOT is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 # Lecture database
 lecture_data = {
@@ -33,11 +46,12 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("⚠️ Format error. Use: /post <lecture_number> <youtube_link>")
 
-def main():
+def run_bot():
     token = os.getenv("BOT_TOKEN")
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("post", post))
     app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=run_flask).start()
+    run_bot()
